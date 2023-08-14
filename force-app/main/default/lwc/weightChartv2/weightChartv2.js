@@ -7,24 +7,31 @@ export default class WeightChartv2 extends LightningElement {
     chartInitialized = false;
     @api recordId;
     @track chart;
+    dates = [];
+    weights = [];
+  
 
     @wire(getRelatedListRecords, {
         parentRecordId: '$recordId',
         relatedListId: 'Histories',
         fields: ['Animal__History.CreatedDate', 'Animal__History.OldValue', 'Animal__History.NewValue'],
-        where: '{ Field: {eq: "Animal__History.Current_Weight__c" } }',
+        where:  '{ Field : {eq: "Current_Weight__c" } }',
         sortBy: ['Animal__History.CreatedDate']
      })
-    fieldHistoryData;{
+    fieldHistoryData( { error, data }) {
         
-        console.log('Data:' + data);
+        console.log('Record ID: ' + this.recordId);
+        console.log('Data:' + JSON.stringify( data ) );
         console.log(error);
+        
         if (data){
-            const dates = [];
-            const weights = [];
+            // const dates = [];
+            // const weights = [];
             data.forEach(entry => {
                 dates.push(new Date(entry.CreatedDate).toLocaleDateString());
+                console.log(dates);
                 weights.push(entry.NewValue);
+                console.log(weights);
             });
 
             if (!this.chartInitialized){
