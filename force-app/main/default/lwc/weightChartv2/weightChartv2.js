@@ -1,72 +1,66 @@
-import { LightningElement, wire, api } from 'lwc';
+import { LightningElement, wire, api, track } from 'lwc';
 import { getRelatedListRecords } from 'lightning/uiRelatedListApi';
 import { loadScript } from 'lightning/platformResourceLoader';
 import CHART_JS from '@salesforce/resourceUrl/ChartJS23';
 
-const FIELDS = ['animalshelters__Animal__History.CreatedDate', 'animalshelters__Animal__History.OldValue', 'animalshelters__Animal__History.NewValue'];
-
 export default class WeightChartv2 extends LightningElement {
-    
-    @api recordId;
-
-    @wire(getRelatedListRecords, {recordId: '$recordId', parentId: 'animalshelters__Animal__History.ParentId', relationshipApiName: 'animalshelters__Animal__History', fields: FIELDS, where: "animalshelters__Animal_History.Field = 'animalshelters__Current_Weight__c' AND animalshelters_Animal_History.ParentId = '$recordId'" })
-    fieldHistoryData;
-
     chartInitialized = false;
+    @api recordId;
+    @track chart;
 
-    renderedCallback() {
-        if (this.chartInitialized){
-            return;
-        }
-        this.chartInitialized = true;
+    @wire(getRelatedListRecords, {
+        parentRecordId: '$recordId',
+        relatedListId: 'Histories',
+        fields: ['Animal__History.CreatedDate', 'Animal__History.OldValue', 'Animal__History.NewValue'],
+        where: '{ Field: {eq: "Animal__History.Current_Weight__c"}}'
+     })
+    fieldHistoryData({ error, data }){
+        console.log('Data:' + data);
+        if (data){
+            const dates = [];
+            const weights = [];
+            data.forEach(entry => {
+                dates.push(new Date(entry.CreatedDate).toLocaleDateString());
+                weights.push(entry.NewValue);
+            });
 
-        Promise.all([
-            loadScript(this, CHART_JS + '/Chart.min.js'),
-            // loadStyle(this, CHART_JS + '/Chart.mic.css')
-        ])
-        .then(() => {
-            this.initializeChart();
-        })
-        .catch(error => {
-            console.log('Error loading Chart.js');
-            console.log(error);
-        });
-    }
-    initializeChart() {
-        if (!this.fieldHistoryData.data){
-            return;
-        }
-        const ctx = this.template.querySelector('#lineChart').getContext( '2d' );
-
-        const data = {
-            labels: this.fieldHistoryData.data.map(item => new Date(item.fields.animalshelters__Animal__History.CreatedDate.value)),
-            datasets: [
-                {
-                    label: 'Weight Changes',
-                    data: this.fieldHistoryData.data.map(item => item.fields.animalshelters__Animal__History.NewValue.value),
-                    borderColor: 'blue',
-                    fill: false
-                }
-            ]
-        };
-
-        const config = {
-            type: 'line',
-            data: data,
-            options: {
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'day'
-                        }
-                    },
-                    y: {
-                        beginAtZero: true
-                    }
-                }
+            if (!this.chartInitialized){
+                this.chartInitialized(dates, weights);
+            } else {
+                this.updateChart(dates, weights);
             }
-        };
-        new window.Chart(ctx, config);
+        }
+    }
+
+    initializeChart(dates, weights) {
+        loadScript(this, CHART_JS)
+            .then(() => {
+                const ctx = this.template.querySelector('canvas').getContext( '2d' );
+                this.chart = new window.Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: 'Weight History',
+                                data: weights,
+                                borderColor: 'blue',
+                                fill: false,
+                            },
+                        ],
+                    },
+                });
+                this.initializeChart = true;
+            })
+            .catch(error => {
+                console.log('Error loading Chart.js');
+                console.log(error);
+            });
+    }
+    updateChart(dates, weights){
+        this.chart.data.labels = dates;
+        this.chart.data.datasets[0].data = weights;
+        this.chart.update();
     }
 }
+
