@@ -23,10 +23,8 @@ export default class WeightChartv2 extends LightningElement {
         console.log('Record ID: ' + this.recordId);
         console.log('Data:' + JSON.stringify( data ) );
         console.log(error);
-        
+
         if (data){
-            // const dates = [];
-            // const weights = [];
             data.forEach(entry => {
                 dates.push(new Date(entry.CreatedDate).toLocaleDateString());
                 console.log(dates);
