@@ -1,7 +1,15 @@
 <template>
-        <lightning-card title="Weight History">
-        <div>
-            <canvas class="chart" id="lineChart" width="400" height="200" lwc:dom="manual"></canvas>
+        <lightning-card title="Weight History" icon-name="standard:calculated_insights">
+        <div class="slds-grid slds-wrap slds-grid--pull-padded">
+            <div if:true={chartInitialized} class="s;ds-col_padded slds-size_1-of-1">
+                <canvas class="lineChart" lwc:dom="manual"></canvas>
+            </div>
+            <div if:false={chartInitialized} class="slds-col_padded slds-size_1-of-1">
+                ChartJs Not loaded yet
+            </div>
+            <div class="slds-col_padded slds-size_1-of-1">
+                Footer
+            </div>
         </div>
     </lightning-card>
     

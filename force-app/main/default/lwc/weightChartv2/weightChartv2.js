@@ -1,10 +1,11 @@
 import { LightningElement, wire, api, track } from 'lwc';
 import { getRelatedListRecords } from 'lightning/uiRelatedListApi';
 import { loadScript } from 'lightning/platformResourceLoader';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import CHART_JS from '@salesforce/resourceUrl/ChartJS23';
 
 export default class WeightChartv2 extends LightningElement {
-    chartInitialized = false;
+    @track chartInitialized;
     @api recordId;
     @track chart;
     dates = [];
@@ -18,57 +19,72 @@ export default class WeightChartv2 extends LightningElement {
         where:  '{ Field : {eq: "Current_Weight__c" } }',
         sortBy: ['Animal__History.CreatedDate']
      })
-    fieldHistoryData( { error, data }) {
-        
+    fieldHistoryData( error, data ){
+
         console.log('Record ID: ' + this.recordId);
-        console.log('Data:' + JSON.stringify( data ) );
+        console.log('Data ' + JSON.stringify(data));
         console.log(error);
 
-        if (data){
-            data.forEach(entry => {
-                dates.push(new Date(entry.CreatedDate).toLocaleDateString());
-                console.log(dates);
-                weights.push(entry.NewValue);
-                console.log(weights);
-            });
+    };
 
-            if (!this.chartInitialized){
-                this.chartInitialized(dates, weights);
-            } else {
-                this.updateChart(dates, weights);
-            }
+    renderedCallback() {
+        if (this.chartInitialized) {
+            return;
         }
+        this.chartInitialized = true;
+
+        Promise.all([
+            loadScript(this, CHART_JS)
+        ]).then(() => {
+            this.prepareChartData();
+        })
+        .catch(error => {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error loading ChartJS',
+                    message: error.message,
+                    variant: 'error',
+                }),
+            );
+
+        });
     }
 
-    initializeChart(dates, weights) {
-        loadScript(this, CHART_JS)
-            .then(() => {
-                const ctx = this.template.querySelector('canvas').getContext( '2d' );
-                this.chart = new window.Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: dates,
-                        datasets: [
-                            {
-                                label: 'Weight History',
-                                data: weights,
-                                borderColor: 'blue',
-                                fill: false,
-                            },
-                        ],
-                    },
-                });
-                this.initializeChart = true;
-            })
-            .catch(error => {
-                console.log('Error loading Chart.js');
-                console.log(error);
-            });
+    prepareChartData(){
+
+        if (!this.fieldHistoryData.data) {
+            return;
+        }
+
+        this.fieldHistoryData.forEach(entry => {
+            dates.push(new Date(entry.Animal__History.CreatedDate).toLocaleDateString());
+            weights.push(entry.Animal__History.NewValue);
+        });
+
+        const ctx = this.template.querySelector('canvas.linechart').getContext( '2d' );
+        
+        const chartData = {
+            labels: dates,
+            datasets: [{
+                label: 'Weight History',
+                data: this.weights,
+                fill: false,
+                borderColor: 'blue',
+            }]
+        };
+
+        const config = {
+            type: 'line',
+            data: chartData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+        new window.Chart(ctx, config);
     }
-    updateChart(dates, weights){
-        this.chart.data.labels = dates;
-        this.chart.data.datasets[0].data = weights;
-        this.chart.update();
-    }
+
 }
-
