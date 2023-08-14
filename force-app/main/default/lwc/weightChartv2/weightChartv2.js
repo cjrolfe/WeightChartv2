@@ -12,10 +12,13 @@ export default class WeightChartv2 extends LightningElement {
         parentRecordId: '$recordId',
         relatedListId: 'Histories',
         fields: ['Animal__History.CreatedDate', 'Animal__History.OldValue', 'Animal__History.NewValue'],
-        where: '{ Field: {eq: "Animal__History.Current_Weight__c"}}'
+        where: '{ Field: {eq: "Animal__History.Current_Weight__c" } }',
+        sortBy: ['Animal__History.CreatedDate']
      })
-    fieldHistoryData({ error, data }){
+    fieldHistoryData;{
+        
         console.log('Data:' + data);
+        console.log(error);
         if (data){
             const dates = [];
             const weights = [];
