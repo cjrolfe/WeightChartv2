@@ -8,6 +8,8 @@ export default class ChartExample extends LightningElement {
     @track isChartJsInitialized;
     chart;
 
+
+    // configure data for chart
     config = {
         type: 'line',
         data: {
@@ -113,6 +115,7 @@ export default class ChartExample extends LightningElement {
         }
     };
 
+    // Building Chart
     renderedCallback() {
         if (this.isChartJsInitialized) {
             return;
