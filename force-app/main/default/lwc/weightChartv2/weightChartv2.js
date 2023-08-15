@@ -19,17 +19,15 @@ export default class WeightChartv2 extends LightningElement {
         fields: ['Animal__History.CreatedDate', 'Animal__History.OldValue', 'Animal__History.NewValue'],
         where:  '{ Field : {eq: "Current_Weight__c" } }',
         sortBy: ['Animal__History.CreatedDate']
-     })fieldHistoryData({ error, data }) {
-
-        console.log('Data is: ', JSON.stringify( data ));
-     };
+     })
+     fieldHistoryData;
 
     // Chart Config
     chartData = {
-        labels: data.map(record => record.CreatedDate),
+        labels: this.fieldHistoryData.data.map(record => record.CreatedDate),
         datasets: [{
             label: 'Weight History',
-            data: data.map(record => record.NewValue),
+            data: this.fieldHistoryData.data.map(record => record.NewValue),
             fill: false
         }]
     };
