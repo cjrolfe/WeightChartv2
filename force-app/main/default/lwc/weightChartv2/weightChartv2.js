@@ -8,9 +8,6 @@ export default class WeightChartv2 extends LightningElement {
     @track chartInitialized;
     @api recordId;
     @track chart;
-    dates = [];
-    weights = [];
-  
 
     @wire(getRelatedListRecords, {
         parentRecordId: '$recordId',
@@ -19,13 +16,7 @@ export default class WeightChartv2 extends LightningElement {
         where:  '{ Field : {eq: "Current_Weight__c" } }',
         sortBy: ['Animal__History.CreatedDate']
      })
-    fieldHistoryData( error, data ){
-
-        console.log('Record ID: ' + this.recordId);
-        console.log('Data ' + JSON.stringify(data));
-        console.log(error);
-
-    };
+    fieldHistoryData;
 
     renderedCallback() {
         if (this.chartInitialized) {
@@ -36,7 +27,7 @@ export default class WeightChartv2 extends LightningElement {
         Promise.all([
             loadScript(this, CHART_JS)
         ]).then(() => {
-            this.prepareChartData();
+            this.initializeChart();
         })
         .catch(error => {
             this.dispatchEvent(
@@ -50,18 +41,16 @@ export default class WeightChartv2 extends LightningElement {
         });
     }
 
-    prepareChartData(){
-
+    initializeChart(){
         if (!this.fieldHistoryData.data) {
             return;
         }
-
+        const ctx = this.template.querySelector('canvas.linechart').getContext( '2d' );
+        
         this.fieldHistoryData.forEach(entry => {
             dates.push(new Date(entry.Animal__History.CreatedDate).toLocaleDateString());
             weights.push(entry.Animal__History.NewValue);
         });
-
-        const ctx = this.template.querySelector('canvas.linechart').getContext( '2d' );
         
         const chartData = {
             labels: dates,
@@ -84,7 +73,7 @@ export default class WeightChartv2 extends LightningElement {
                 }
             }
         };
-        new window.Chart(ctx, config);
+        new window.Chart(ctx, this.config);
     }
 
 }
